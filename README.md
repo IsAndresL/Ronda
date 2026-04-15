@@ -106,9 +106,9 @@ Crea usuario admin desde:
 ### Mesero (tabla personalizada)
 
 Ya queda creado por SQL:
-- Nombre: `Carlos Mesero`
-- Usuario: `carlos.mesero`
-- Contraseña real: `Mesero123`
+- Nombre: `mesero1`
+- Usuario: `mesero1`
+- Contraseña real: `123456`
 
 ## 4) Instalar dependencias y correr el proyecto
 
