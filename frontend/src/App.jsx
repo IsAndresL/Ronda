@@ -3,7 +3,6 @@ import { obtenerToken } from './servicios/authServicio'
 import ActualizarCredenciales from './vista/ActualizarCredenciales'
 import Bienvenida from './vista/Bienvenida'
 import Login from './vista/Login'
-import Registro from './vista/Registro'
 
 const RutaProtegida = ({ children }) => {
   const token = obtenerToken()
@@ -16,7 +15,6 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/registro" element={<Registro />} />
 
         <Route
           path="/bienvenida"

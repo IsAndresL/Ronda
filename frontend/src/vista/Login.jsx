@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { guardarSesion, loginAdmin, loginMesero } from '../servicios/authServicio'
 
 const Login = () => {
@@ -7,7 +7,8 @@ const Login = () => {
   const [modo, setModo] = useState('admin')
   const [email, setEmail] = useState('')
   const [contrasena, setContrasena] = useState('')
-  const [pin, setPin] = useState('')
+  const [usuarioMesero, setUsuarioMesero] = useState('')
+  const [contrasenaMesero, setContrasenaMesero] = useState('')
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
 
@@ -15,7 +16,7 @@ const Login = () => {
     () =>
       modo === 'admin'
         ? 'Accede con correo y contraseña para gestionar todo el sistema.'
-        : 'Accede con tu PIN de 4 dígitos para operar en sala.',
+        : 'Accede con usuario y contraseña para operar en sala.',
     [modo]
   )
 
@@ -35,12 +36,12 @@ const Login = () => {
 
         respuesta = await loginAdmin(email, contrasena)
       } else {
-        if (!/^\d{4}$/.test(pin)) {
-          setError('El PIN debe contener exactamente 4 dígitos.')
+        if (!usuarioMesero || !contrasenaMesero) {
+          setError('Debes completar usuario y contraseña del mesero.')
           return
         }
 
-        respuesta = await loginMesero(pin)
+        respuesta = await loginMesero(usuarioMesero, contrasenaMesero)
       }
 
       guardarSesion({
@@ -109,15 +110,25 @@ const Login = () => {
             </>
           ) : (
             <>
-              <label htmlFor="pin">PIN de 4 dígitos</label>
+              <label htmlFor="usuarioMesero">Usuario de mesero</label>
               <input
-                id="pin"
+                id="usuarioMesero"
+                type="text"
+                placeholder="carlos.mesero"
+                maxLength={30}
+                value={usuarioMesero}
+                onChange={(e) => setUsuarioMesero(e.target.value)}
+                autoComplete="username"
+              />
+
+              <label htmlFor="contrasenaMesero">Contraseña</label>
+              <input
+                id="contrasenaMesero"
                 type="password"
-                placeholder="1234"
-                maxLength={4}
-                inputMode="numeric"
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                placeholder="********"
+                value={contrasenaMesero}
+                onChange={(e) => setContrasenaMesero(e.target.value)}
+                autoComplete="current-password"
               />
             </>
           )}
@@ -130,9 +141,7 @@ const Login = () => {
         </form>
 
         <footer className="auth-footer">
-          <p>
-            ¿Nuevo administrador? <Link to="/registro">Crear cuenta</Link>
-          </p>
+          <p>La creación de usuarios se realiza solo dentro del panel de administración.</p>
         </footer>
       </section>
     </main>

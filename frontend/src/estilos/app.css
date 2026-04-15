@@ -244,6 +244,41 @@ a {
   margin-top: 0.6rem;
 }
 
+.usuarios-grid {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.usuarios-grid h3 {
+  margin: 0.25rem 0;
+  font-family: 'Poppins', sans-serif;
+  color: var(--ronda-cafe);
+}
+
+.usuario-item {
+  border: 1px solid rgba(46, 31, 26, 0.16);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.usuario-item p {
+  margin: 0.15rem 0;
+  font-size: 0.9rem;
+}
+
+.acciones-usuario {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .mensaje {
   margin: 0.3rem 0;
   font-size: 0.92rem;

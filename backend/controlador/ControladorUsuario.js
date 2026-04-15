@@ -1,20 +1,30 @@
 import Usuario from '../modelo/Usuario.js'
 
 const esEmailValido = (valor) => /^\S+@\S+\.\S+$/.test(valor)
-const esPinValido = (valor) => /^\d{4}$/.test(valor)
+const esUsuarioValido = (valor) => /^[a-zA-Z0-9._-]{3,30}$/.test(valor)
 
 const ControladorUsuario = {
   async registrar(req, res) {
     try {
-      const { nombre_usuario: nombreUsuario, correo_electronico: email, contrasena, confirmar_contrasena } =
-        req.body
-
-      if (!nombreUsuario || !email || !contrasena || !confirmar_contrasena) {
-        return res.status(400).json({ mensaje: 'Todos los campos son obligatorios para el registro.' })
+      if (req.usuario?.rol !== 'admin') {
+        return res.status(403).json({ mensaje: 'Solo un administrador puede crear usuarios.' })
       }
 
-      if (!esEmailValido(email)) {
-        return res.status(400).json({ mensaje: 'El correo electrónico no es válido.' })
+      const {
+        rolObjetivo,
+        nombre_usuario: nombreUsuario,
+        correo_electronico: email,
+        usuario,
+        contrasena,
+        confirmar_contrasena
+      } = req.body
+
+      if (!rolObjetivo || !['admin', 'mesero'].includes(rolObjetivo)) {
+        return res.status(400).json({ mensaje: 'Debes indicar rolObjetivo como admin o mesero.' })
+      }
+
+      if (!nombreUsuario || !contrasena || !confirmar_contrasena) {
+        return res.status(400).json({ mensaje: 'Debes completar los campos obligatorios.' })
       }
 
       if (contrasena.length < 6) {
@@ -27,14 +37,41 @@ const ControladorUsuario = {
         return res.status(400).json({ mensaje: 'Las contraseñas no coinciden.' })
       }
 
-      const data = await Usuario.registrar(nombreUsuario, email, contrasena)
+      if (rolObjetivo === 'admin') {
+        if (!email || !esEmailValido(email)) {
+          return res.status(400).json({ mensaje: 'Debes enviar un correo válido para el admin.' })
+        }
+
+        const data = await Usuario.registrarAdmin(nombreUsuario, email, contrasena)
+
+        return res.status(201).json({
+          mensaje: 'Administrador creado correctamente.',
+          usuario: {
+            id: data.user?.id,
+            rol: 'admin',
+            email: data.user?.email,
+            nombre_usuario: nombreUsuario,
+            activo: true
+          }
+        })
+      }
+
+      if (!usuario || !esUsuarioValido(usuario)) {
+        return res.status(400).json({
+          mensaje: 'Para mesero, el usuario debe tener entre 3 y 30 caracteres alfanuméricos.'
+        })
+      }
+
+      const mesero = await Usuario.registrarMesero(nombreUsuario, usuario, contrasena)
 
       return res.status(201).json({
-        mensaje: 'Administrador registrado correctamente. Revisa tu correo para confirmar la cuenta.',
+        mensaje: 'Mesero creado correctamente.',
         usuario: {
-          id: data.user?.id,
-          email: data.user?.email,
-          nombre_usuario: nombreUsuario
+          id: mesero.id,
+          rol: 'mesero',
+          usuario: mesero.usuario,
+          nombre_usuario: mesero.nombre_usuario,
+          activo: mesero.activo
         }
       })
     } catch (error) {
@@ -44,7 +81,7 @@ const ControladorUsuario = {
 
   async login(req, res) {
     try {
-      const { correo_electronico: email, contrasena, pin } = req.body
+      const { correo_electronico: email, usuario, contrasena } = req.body
 
       // Login admin: email + contraseña.
       if (email && contrasena) {
@@ -62,16 +99,18 @@ const ControladorUsuario = {
         })
       }
 
-      // Login mesero: PIN de 4 dígitos.
-      if (pin) {
-        if (!esPinValido(pin)) {
-          return res.status(400).json({ mensaje: 'El PIN debe contener exactamente 4 dígitos.' })
+      // Login mesero: usuario + contraseña.
+      if (usuario && contrasena) {
+        if (!esUsuarioValido(usuario)) {
+          return res.status(400).json({
+            mensaje: 'Usuario de mesero inválido. Usa entre 3 y 30 caracteres alfanuméricos.'
+          })
         }
 
-        const resultado = await Usuario.loginMesero(pin)
+        const resultado = await Usuario.loginMesero(usuario, contrasena)
 
         if (!resultado) {
-          return res.status(401).json({ mensaje: 'PIN inválido o mesero inactivo.' })
+          return res.status(401).json({ mensaje: 'Usuario o contraseña inválidos para mesero.' })
         }
 
         if (!resultado.token) {
@@ -89,7 +128,7 @@ const ControladorUsuario = {
       }
 
       return res.status(400).json({
-        mensaje: 'Debes enviar correo + contraseña (admin) o PIN (mesero).'
+        mensaje: 'Debes enviar correo + contraseña (admin) o usuario + contraseña (mesero).'
       })
     } catch (error) {
       const status = error.message.toLowerCase().includes('invalid login credentials') ? 401 : 500
@@ -149,25 +188,80 @@ const ControladorUsuario = {
         return res.status(200).json({ mensaje: 'Contraseña actualizada correctamente.' })
       }
 
-      const { nuevoPin, confirmarPin } = req.body
+      const { nuevaContrasena, confirmarContrasena } = req.body
 
-      if (!nuevoPin || !confirmarPin) {
-        return res.status(400).json({ mensaje: 'Debes enviar nuevoPin y confirmarPin.' })
+      if (!nuevaContrasena || !confirmarContrasena) {
+        return res
+          .status(400)
+          .json({ mensaje: 'Debes enviar nuevaContrasena y confirmarContrasena.' })
       }
 
-      if (!esPinValido(nuevoPin)) {
-        return res.status(400).json({ mensaje: 'El PIN debe contener exactamente 4 dígitos.' })
+      if (nuevaContrasena.length < 6) {
+        return res
+          .status(400)
+          .json({ mensaje: 'La nueva contraseña del mesero debe tener mínimo 6 caracteres.' })
       }
 
-      if (nuevoPin !== confirmarPin) {
-        return res.status(400).json({ mensaje: 'Los PIN no coinciden.' })
+      if (nuevaContrasena !== confirmarContrasena) {
+        return res.status(400).json({ mensaje: 'Las contraseñas no coinciden.' })
       }
 
-      await Usuario.actualizarPIN(req.usuario.meseroId, nuevoPin)
+      await Usuario.actualizarContrasenaMesero(req.usuario.meseroId, nuevaContrasena)
 
-      return res.status(200).json({ mensaje: 'PIN actualizado correctamente.' })
+      return res.status(200).json({ mensaje: 'Contraseña de mesero actualizada correctamente.' })
     } catch (error) {
       return res.status(500).json({ mensaje: `Error al actualizar credenciales: ${error.message}` })
+    }
+  },
+
+  async listarUsuarios(req, res) {
+    try {
+      if (req.usuario.rol !== 'admin') {
+        return res.status(403).json({ mensaje: 'Solo un administrador puede ver la lista de usuarios.' })
+      }
+
+      const data = await Usuario.listarUsuarios()
+
+      return res.status(200).json({
+        mensaje: 'Listado de usuarios obtenido correctamente.',
+        ...data
+      })
+    } catch (error) {
+      return res.status(500).json({ mensaje: `Error al listar usuarios: ${error.message}` })
+    }
+  },
+
+  async suspender(req, res) {
+    try {
+      const { id } = req.params
+      const { rolObjetivo, suspender } = req.body
+
+      if (req.usuario.rol !== 'admin') {
+        return res.status(403).json({ mensaje: 'Solo un administrador puede suspender usuarios.' })
+      }
+
+      if (!['admin', 'mesero'].includes(rolObjetivo)) {
+        return res.status(400).json({ mensaje: 'Debes indicar rolObjetivo como admin o mesero.' })
+      }
+
+      if (typeof suspender !== 'boolean') {
+        return res.status(400).json({ mensaje: 'Debes enviar suspender como true o false.' })
+      }
+
+      if (rolObjetivo === 'admin') {
+        await Usuario.suspenderAdmin(id, suspender)
+      } else {
+        await Usuario.suspenderMesero(id, suspender)
+      }
+
+      return res.status(200).json({
+        mensaje: suspender
+          ? `Usuario ${rolObjetivo} suspendido correctamente.`
+          : `Usuario ${rolObjetivo} reactivado correctamente.`,
+        id
+      })
+    } catch (error) {
+      return res.status(500).json({ mensaje: `Error al suspender usuario: ${error.message}` })
     }
   },
 
@@ -183,6 +277,12 @@ const ControladorUsuario = {
       if (!rolObjetivo || !['admin', 'mesero'].includes(rolObjetivo)) {
         return res.status(400).json({
           mensaje: 'Debes indicar rolObjetivo con valor admin o mesero.'
+        })
+      }
+
+      if (rolObjetivo === 'admin' && id === req.usuario.id) {
+        return res.status(400).json({
+          mensaje: 'No puedes eliminar tu propia cuenta de administrador.'
         })
       }
 

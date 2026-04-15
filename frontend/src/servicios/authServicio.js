@@ -26,13 +26,13 @@ export const loginAdmin = async (email, contrasena) => {
   return data
 }
 
-export const loginMesero = async (pin) => {
-  const { data } = await api.post('/auth/login', { pin })
+export const loginMesero = async (usuario, contrasena) => {
+  const { data } = await api.post('/auth/login', { usuario, contrasena })
   return data
 }
 
-export const registrarAdmin = async (datos) => {
-  const { data } = await api.post('/auth/registro', datos)
+export const registrarUsuario = async (datos, token) => {
+  const { data } = await api.post('/auth/registro', datos, authHeaders(token))
   return data
 }
 
@@ -43,6 +43,21 @@ export const obtenerPerfil = async (token) => {
 
 export const actualizarCredenciales = async (datos, token) => {
   const { data } = await api.put('/auth/actualizar', datos, authHeaders(token))
+  return data
+}
+
+export const listarUsuarios = async (token) => {
+  const { data } = await api.get('/auth/usuarios', authHeaders(token))
+  return data
+}
+
+export const suspenderUsuario = async (id, token, rolObjetivo, suspender) => {
+  const { data } = await api.put(
+    `/auth/suspender/${id}`,
+    { rolObjetivo, suspender },
+    authHeaders(token)
+  )
+
   return data
 }
 

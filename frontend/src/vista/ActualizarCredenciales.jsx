@@ -40,16 +40,11 @@ const ActualizarCredenciales = () => {
     }
 
     if (principal !== confirmacion) {
-      setError(rol === 'admin' ? 'Las contraseñas no coinciden.' : 'Los PIN no coinciden.')
+      setError('Las contraseñas no coinciden.')
       return
     }
 
-    if (rol === 'mesero' && !/^\d{4}$/.test(principal)) {
-      setError('El nuevo PIN debe tener 4 dígitos.')
-      return
-    }
-
-    if (rol === 'admin' && principal.length < 6) {
+    if (principal.length < 6) {
       setError('La nueva contraseña debe tener mínimo 6 caracteres.')
       return
     }
@@ -59,7 +54,7 @@ const ActualizarCredenciales = () => {
       const payload =
         rol === 'admin'
           ? { nuevaContrasena: principal, confirmarContrasena: confirmacion }
-          : { nuevoPin: principal, confirmarPin: confirmacion }
+          : { nuevaContrasena: principal, confirmarContrasena: confirmacion }
 
       const data = await actualizarCredenciales(payload, token)
       setMensaje(data.mensaje || 'Credencial actualizada correctamente.')
@@ -82,37 +77,29 @@ const ActualizarCredenciales = () => {
           <p>
             {rol === 'admin'
               ? 'Define una nueva contraseña para tu cuenta de administrador.'
-              : 'Define un nuevo PIN de 4 dígitos para operar como mesero.'}
+              : 'Define una nueva contraseña para tu cuenta de mesero.'}
           </p>
         </header>
 
         <form className="auth-form" onSubmit={actualizar}>
-          <label htmlFor="principal">{rol === 'admin' ? 'Nueva contraseña' : 'Nuevo PIN'}</label>
+          <label htmlFor="principal">Nueva contraseña</label>
           <input
             id="principal"
             type="password"
-            placeholder={rol === 'admin' ? 'Mínimo 6 caracteres' : '1234'}
-            maxLength={rol === 'admin' ? 64 : 4}
+            placeholder="Mínimo 6 caracteres"
+            maxLength={64}
             value={principal}
-            onChange={(e) =>
-              setPrincipal(rol === 'mesero' ? e.target.value.replace(/\D/g, '').slice(0, 4) : e.target.value)
-            }
+            onChange={(e) => setPrincipal(e.target.value)}
           />
 
-          <label htmlFor="confirmacion">
-            {rol === 'admin' ? 'Confirmar nueva contraseña' : 'Confirmar nuevo PIN'}
-          </label>
+          <label htmlFor="confirmacion">Confirmar nueva contraseña</label>
           <input
             id="confirmacion"
             type="password"
-            placeholder={rol === 'admin' ? 'Repite la contraseña' : 'Repite el PIN'}
-            maxLength={rol === 'admin' ? 64 : 4}
+            placeholder="Repite la contraseña"
+            maxLength={64}
             value={confirmacion}
-            onChange={(e) =>
-              setConfirmacion(
-                rol === 'mesero' ? e.target.value.replace(/\D/g, '').slice(0, 4) : e.target.value
-              )
-            }
+            onChange={(e) => setConfirmacion(e.target.value)}
           />
 
           {error && <p className="mensaje error">{error}</p>}

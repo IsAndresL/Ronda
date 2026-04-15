@@ -7,7 +7,7 @@ Implementación completa del CRUD de login solicitado para RONDA, con arquitectu
 ### Backend
 - Node.js + Express
 - Supabase (`@supabase/supabase-js`)
-- `bcryptjs` (solo para PIN de mesero)
+- `bcryptjs` (hash de contraseña para mesero)
 - `dotenv`
 - `cors`
 
@@ -46,7 +46,6 @@ Implementación completa del CRUD de login solicitado para RONDA, con arquitectu
         supabaseCliente.js
       /vista
         Login.jsx
-        Registro.jsx
         Bienvenida.jsx
         ActualizarCredenciales.jsx
       /servicios
@@ -71,7 +70,7 @@ Implementación completa del CRUD de login solicitado para RONDA, con arquitectu
    - `service_role key` -> `SUPABASE_SERVICE_ROLE_KEY`
 3. En `Authentication > Providers` habilita:
    - Email/Password (admin)
-   - Anonymous Sign-Ins (requerido para generar JWT de mesero después de validar PIN)
+  - Anonymous Sign-Ins (requerido para generar JWT de mesero después de validar usuario/contraseña)
 4. En `SQL Editor` ejecuta el archivo `database/ronda_schema.sql`.
 
 ## 2) Variables de entorno
@@ -108,7 +107,8 @@ Crea usuario admin desde:
 
 Ya queda creado por SQL:
 - Nombre: `Carlos Mesero`
-- PIN real: `1234`
+- Usuario: `carlos.mesero`
+- Contraseña real: `Mesero123`
 
 ## 4) Instalar dependencias y correr el proyecto
 
@@ -135,12 +135,13 @@ App en: `http://localhost:5173`
 ## 5) Endpoints CRUD de Login
 
 ### CREATE
-- `POST /api/auth/registro`
+- `POST /api/auth/registro` (protegida, solo admin autenticado)
 
 Body ejemplo:
 
 ```json
 {
+  "rolObjetivo": "admin",
   "nombre_usuario": "Laura Admin",
   "correo_electronico": "laura@ronda.com",
   "contrasena": "Admin1234*",
@@ -165,7 +166,8 @@ Mesero login:
 
 ```json
 {
-  "pin": "1234"
+  "usuario": "carlos.mesero",
+  "contrasena": "Mesero123"
 }
 ```
 
@@ -185,8 +187,21 @@ Mesero update:
 
 ```json
 {
-  "nuevoPin": "5678",
-  "confirmarPin": "5678"
+  "nuevaContrasena": "Mesero456",
+  "confirmarContrasena": "Mesero456"
+}
+```
+
+### Gestión interna de usuarios (solo admin)
+- `GET /api/auth/usuarios` para listar admins y meseros
+- `PUT /api/auth/suspender/:id` para suspender/reactivar credenciales
+
+Body de suspensión:
+
+```json
+{
+  "rolObjetivo": "mesero",
+  "suspender": true
 }
 ```
 
@@ -206,7 +221,7 @@ Body ejemplo:
 ## 6) Notas de seguridad aplicadas
 
 - Contraseña de admin gestionada por Supabase Auth.
-- PIN de mesero protegido con `bcryptjs` (`saltRounds = 10`).
+- Contraseña de mesero protegida con `bcryptjs` (`saltRounds = 10`).
 - Rutas sensibles protegidas con `authMiddleware` y validación de JWT vía `supabase.auth.getUser(token)`.
 - Claves sensibles solo en `.env`.
 - Validaciones backend de formato y campos obligatorios.
@@ -215,10 +230,14 @@ Body ejemplo:
 ## 7) Alcance de esta entrega
 
 Esta implementación cubre exclusivamente el CRUD de login solicitado:
-- Registro de admin
+- Registro interno por admin para admin/mesero
 - Login admin/mesero
 - Consulta de perfil
-- Actualización de contraseña/PIN
+- Actualización de contraseña
 - Eliminación de usuario
+
+Además incluye administración interna de credenciales:
+- Listado de usuarios
+- Suspensión/reactivación de credenciales
 
 No se incluyeron módulos de mesas, pedidos ni pagos.
