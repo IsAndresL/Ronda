@@ -100,8 +100,8 @@ VITE_SUPABASE_ANON_KEY=TU_SUPABASE_ANON_KEY
 Crea usuario admin desde:
 - `Authentication > Users > Add user`
 - Ejemplo sugerido:
-  - Email: `admin@ronda.com`
-  - Contraseña: `Admin1234*`
+  - Email: `admin2@ronda.com`
+  - Contraseña: `123456`
 
 ### Mesero (tabla personalizada)
 
